@@ -5,6 +5,8 @@ import contactsRouter from './routers/contacts.js';
 import { getEnvVar } from './utils/getEnvVar.js';
 import { notFoundHandler } from './middlewares/notFoundHandler.js';
 import { errorHandler } from './middlewares/errorHandler.js';
+import cookieParser from 'cookie-parser';
+import authRouter from './routers/auth.js';
 
 const PORT = parseInt(getEnvVar('PORT', '3000'));
 
@@ -13,6 +15,8 @@ export const setUpServer = () => {
 
   app.use(cors());
 
+  app.use(cookieParser());
+
   app.use(
     pino({
       transport: {
@@ -20,6 +24,8 @@ export const setUpServer = () => {
       },
     }),
   );
+
+  app.use(authRouter);
 
   app.use(contactsRouter);
 

@@ -21,6 +21,7 @@ export const getContactsController = async (req, res) => {
     sortOrder,
     sortBy,
     filter,
+    userId: req.user._id,
   });
 
   res.status(200).json({
@@ -32,10 +33,14 @@ export const getContactsController = async (req, res) => {
 
 export const getContactByIdController = async (req, res) => {
   const { contactId } = req.params;
-  const contact = await getContactById(contactId);
+  const contact = await getContactById(contactId, req.user._id);
 
   if (contact === null) {
-    throw createHttpError(404, 'Contact not found');
+    throw new createHttpError(404, 'Contact not found');
+  }
+
+  if (contact.userId.toString() !== req.user._id.toString()) {
+    throw new createHttpError(403, 'Access denied');
   }
 
   res.status(200).json({
@@ -46,7 +51,7 @@ export const getContactByIdController = async (req, res) => {
 };
 
 export const createContactController = async (req, res) => {
-  const contact = await createContact(req.body);
+  const contact = await createContact({ ...req.body, userId: req.user._id });
 
   res.status(201).json({
     status: 201,
@@ -57,10 +62,14 @@ export const createContactController = async (req, res) => {
 
 export const updateContactController = async (req, res) => {
   const { contactId } = req.params;
-  const contact = await updateContact(contactId, req.body);
+  const contact = await updateContact(req.body, contactId, req.user._id);
 
   if (contact === null) {
-    throw createHttpError(404, 'Contact not found');
+    throw new createHttpError(404, 'Contact not found');
+  }
+
+  if (contact.userId.toString() !== req.user._id.toString()) {
+    throw new createHttpError(403, 'Access denied');
   }
 
   res.status(200).json({
@@ -72,10 +81,14 @@ export const updateContactController = async (req, res) => {
 
 export const deleteContactController = async (req, res) => {
   const { contactId } = req.params;
-  const contact = await deleteContact(contactId);
+  const contact = await deleteContact(contactId, req.user._id);
 
   if (contact === null) {
-    throw createHttpError(404, 'Contact not found');
+    throw new createHttpError(404, 'Contact not found');
+  }
+
+  if (contact.userId.toString() !== req.user._id.toString()) {
+    throw new createHttpError(403, 'Access denied');
   }
 
   res.status(204).send();
