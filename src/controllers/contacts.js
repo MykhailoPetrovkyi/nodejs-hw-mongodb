@@ -9,6 +9,10 @@ import createHttpError from 'http-errors';
 import { parsePaginationParams } from '../utils/parsePaginationParams.js';
 import { parseSortParams } from '../utils/parseSortParams.js';
 import { parseFilterParams } from '../utils/parseFilterParams.js';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { uploadToCloudinary } from '../utils/uploadToCloudinary.js';
+import { getEnvVar } from '../utils/getEnvVar.js';
 
 export const getContactsController = async (req, res) => {
   const { page, perPage } = parsePaginationParams(req.query);
@@ -51,7 +55,23 @@ export const getContactByIdController = async (req, res) => {
 };
 
 export const createContactController = async (req, res) => {
-  const contact = await createContact({ ...req.body, userId: req.user._id });
+  let photoUrl = null;
+
+  if (getEnvVar('ENABLE_CLOUDINARY') === 'true') {
+    photoUrl = await uploadToCloudinary(req.file);
+  } else {
+    await fs.rename(
+      path.join('src', 'tmp', req.file.filename),
+      path.join('src', 'uploads', req.file.filename),
+    );
+    photoUrl = `${getEnvVar('APP_DOMAIN')}/uploads/${req.file.filename}`;
+  }
+
+  const contact = await createContact({
+    ...req.body,
+    userId: req.user._id,
+    photo: photoUrl,
+  });
 
   res.status(201).json({
     status: 201,
@@ -62,7 +82,24 @@ export const createContactController = async (req, res) => {
 
 export const updateContactController = async (req, res) => {
   const { contactId } = req.params;
-  const contact = await updateContact(req.body, contactId, req.user._id);
+
+  let photoUrl = null;
+
+  if (getEnvVar('ENABLE_CLOUDINARY') === 'true') {
+    photoUrl = await uploadToCloudinary(req.file);
+  } else {
+    await fs.rename(
+      path.join('src', 'tmp', req.file.filename),
+      path.join('src', 'uploads', req.file.filename),
+    );
+    photoUrl = `${getEnvVar('APP_DOMAIN')}/uploads/${req.file.filename}`;
+  }
+
+  const contact = await updateContact(contactId, {
+    ...req.body,
+    userId: req.user._id,
+    photo: photoUrl,
+  });
 
   if (contact === null) {
     throw new createHttpError(404, 'Contact not found');
