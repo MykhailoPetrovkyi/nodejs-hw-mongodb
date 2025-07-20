@@ -8,6 +8,7 @@ import cookieParser from 'cookie-parser';
 import contactsRouter from './routers/contacts.js';
 import authRouter from './routers/auth.js';
 import path from 'node:path';
+import { swaggerDocs } from './middlewares/swaggerDocs.js';
 
 const PORT = parseInt(getEnvVar('PORT', '3000'));
 
@@ -27,6 +28,8 @@ export const setUpServer = () => {
       },
     }),
   );
+
+  app.use('/api-docs', swaggerDocs());
 
   app.use('/auth', authRouter);
 
